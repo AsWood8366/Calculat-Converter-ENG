@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>🔄 All-in-one Unit Converter</title>
+<style>
+  :root{
+    --card-bg:#ffffff;
+    --accent-1:#ff6f61;
+    --accent-2:#ffd166;
+    --accent-3:#06d6a0;
+    --accent-4:#4dabf7;
+    --text:#222;
+  }
+  html,body{height:100%;margin:0;font-family:system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Helvetica Neue", Arial;background: linear-gradient(135deg,#f8f9fb,#e8f3ff);}
+  header{
+    padding:14px;
+    text-align:center;
+    background:linear-gradient(90deg,var(--accent-1),var(--accent-2),var(--accent-3),var(--accent-4));
+    background-size:400% 400%;
+    color:#fff;
+    font-weight:700;
+    box-shadow:0 4px 12px rgba(0,0,0,0.08);
+    animation:hdr 8s linear infinite;
+  }
+  @keyframes hdr{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+  main{max-width:1100px;margin:18px auto;padding:12px;display:grid;grid-template-columns:1fr 380px;gap:18px;box-sizing:border-box;}
+  @media(max-width:980px){main{grid-template-columns:1fr;padding:10px}}
+  .panel{background:var(--card-bg);border-radius:12px;padding:14px;box-shadow:0 6px 18px rgba(20,20,30,0.06)}
+  /* notifier */
+  #notifier{
+    position:fixed;left:0;top:-72px;width:100%;z-index:9999;
+    padding:14px 10px;text-align:center;color:#fff;font-weight:700;
+    background:linear-gradient(90deg,#ff4e50,#f9d423,#1fddff,#28a745);
+    background-size:400% 400%;
+    box-shadow:0 6px 18px rgba(0,0,0,0.15);
+    transition:top .45s ease;
+    font-size:1rem;
+  }
+  /* converter controls */
+  .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  select, input[type="number"], input[type="date"]{
+    padding:10px;border-radius:8px;border:1px solid #ddd;font-size:1rem;outline:none;
+    box-sizing:border-box;background:#fafafa;color:var(--text);
+  }
+  select{min-width:220px}
+  .wide{flex:1;min-width:180px}
+  .btn{background:linear-gradient(90deg,var(--accent-3),var(--accent-4));color:#fff;border:none;padding:10px 14px;border-radius:8px;cursor:pointer;font-weight:700}
+  .btn.secondary{background:linear-gradient(90deg,var(--accent-1),var(--accent-2))}
+  .result{margin-top:12px;padding:10px;border-radius:8px;background:#fafafa;border:1px dashed #e0e0e0;font-weight:700}
+  /* history */
+  #history{max-height:60vh;overflow:auto;padding:10px;display:flex;flex-direction:column;gap:8px}
+  .hist-item{background:#f7f7fb;padding:10px;border-radius:8px;border-left:4px solid #cde;word-break:break-word}
+  /* small screens */
+  @media(max-width:520px){
+    select{min-width:140px}
+    .controls{flex-direction:column;align-items:stretch}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  🔄 All-in-one Unit Converter — (all units + date difference)
+</header>
+
+<div id="notifier" aria-hidden="true">Notification</div>
+
+<main>
+  <!-- Left: Converter -->
+  <section class="panel" aria-label="Converter Panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+      <div style="font-weight:800;font-size:1.05rem">Select conversion</div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn secondary" onclick="clearInputs()">💫 Clear</button>
+        <button class="btn" onclick="openCalculator()">🧮 Open Calculator</button>
+      </div>
+    </div>
+
+    <div class="controls">
+      <select id="conversionType" onchange="onTypeChange()" class="wide" aria-label="Conversion Type">
+        <option value="">-- choose type --</option>
+
+        <!-- Length -->
+        <optgroup label="📏 Length">
+          <option value="meterToFeet">meter → feet</option>
+          <option value="feetToMeter">feet → meter</option>
+          <option value="kmToMile">kilometer → mile</option>
+          <option value="mileToKm">mile → kilometer</option>
+          <option value="cmToInch">centimeter → inch</option>
+          <option value="inchToCm">inch → centimeter</option>
+          <option value="mmToInch">millimeter → inch</option>
+          <option value="inchToMm">inch → millimeter</option>
+          <option value="yardToMeter">yard → meter</option>
+          <option value="meterToYard">meter → yard</option>
+        </optgroup>
+
+        <!-- Weight -->
+        <optgroup label="⚖ Weight">
+          <option value="kgToPound">kilogram → pound</option>
+          <option value="poundToKg">pound → kilogram</option>
+          <option value="gramToOunce">gram → ounce</option>
+          <option value="ounceToGram">ounce → gram</option>
+          <option value="tonToKg">ton → kilogram</option>
+          <option value="kgToTon">kilogram → ton</option>
+          <option value="seerToKg">seer → kilogram</option>
+          <option value="kgToSeer">kilogram → seer</option>
+        </optgroup>
+
+        <!-- Area -->
+        <optgroup label="📐 Area">
+          <option value="marlaToSqft">marla → sq ft</option>
+          <option value="sqftToMarla">sq ft → marla</option>
+          <option value="kanalToAcre">kanal → acre</option>
+          <option value="acreToKanal">acre → kanal</option>
+          <option value="sqmToSqft">m² → sq ft</option>
+          <option value="sqftToSqm">sq ft → m²</option>
+          <option value="hectareToAcre">hectare → acre</option>
+          <option value="acreToHectare">acre → hectare</option>
+        </optgroup>
+
+        <!-- Volume -->
+        <optgroup label="📦 Volume">
+          <option value="literToGallon">liter → gallon (US)</option>
+          <option value="gallonToLiter">gallon (US) → liter</option>
+          <option value="mlToCup">milliliter → cup (US)</option>
+          <option value="cupToMl">cup (US) → milliliter</option>
+          <option value="cubicToLiter">m³ → liter</option>
+          <option value="literToCubic">liter → m³</option>
+        </optgroup>
+
+        <!-- Speed -->
+        <optgroup label="🚀 Speed">
+          <option value="kmhToMph">km/h → mph</option>
+          <option value="mphToKmh">mph → km/h</option>
+          <option value="msToKmh">m/s → km/h</option>
+          <option value="kmhToMs">km/h → m/s</option>
+        </optgroup>
+
+        <!-- Time simple -->
+        <optgroup label="⏳ Time">
+          <option value="hourToMinute">hours → minutes</option>
+          <option value="minuteToSecond">minutes → seconds</option>
+          <option value="dayToHour">days → hours</option>
+          <option value="hourToDay">hours → days</option>
+        </optgroup>
+
+        <!-- Temperature -->
+        <optgroup label="🌡 Temperature">
+          <option value="cToF">Celsius → Fahrenheit</option>
+          <option value="fToC">Fahrenheit → Celsius</option>
+          <option value="cToK">Celsius → Kelvin</option>
+          <option value="kToC">Kelvin → Celsius</option>
+        </optgroup>
+
+        <!-- Data storage -->
+        <optgroup label="🔢 Data storage">
+          <option value="bytesToKb">bytes → KB</option>
+          <option value="kbToMb">KB → MB</option>
+          <option value="mbToGb">MB → GB</option>
+        </optgroup>
+
+        <!-- Date / age -->
+        <optgroup label="📅 Date / difference">
+          <option value="dateDiff">difference between two dates (Y, M, D)</option>
+          <option value="daysToYMD">days → years/months/days (approx)</option>
+          <option value="ymdToDays">years/months/days → days (approx)</option>
+        </optgroup>
+      </select>
+
+      <!-- Dynamic inputs area -->
+      <div id="inputs" style="flex:1;display:flex;flex-direction:column;gap:8px">
+        <!-- default input -->
+        <input type="number" id="valueIn" placeholder="Enter value" />
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+      <button class="btn" onclick="doConvert()">Convert</button>
+      <button class="btn secondary" onclick="copyResult()">Copy result</button>
+    </div>
+
+    <div class="result" id="resultBox" style="margin-top:12px;display:none">
+      <div style="font-weight:800;margin-bottom:6px">Result</div>
+      <div id="resultText" style="font-size:1.05rem;color:var(--text)"></div>
+    </div>
+  </section>
+
+  <!-- Right: History -->
+  <aside class="panel" aria-label="History Panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div style="font-weight:800">📜 Live history</div>
+      <div>
+        <button class="btn secondary" onclick="clearHistory()">Clear all history</button>
+      </div>
+    </div>
+    <div id="history"></div>
+  </aside>
+</main>
+
+<script>
+/* --- Utilities --- */
+function round(v,dec=4){ if(typeof v !== 'number' || !isFinite(v)) return v; return Math.round(v * Math.pow(10,dec))/Math.pow(10,dec); }
+function showNotifier(msg){
+  const bar = document.getElementById('notifier');
+  bar.textContent = '📢 ' + msg;
+  bar.style.top = '0';
+  setTimeout(()=>{ bar.style.top = '-72px'; }, 3800);
+}
+function addHistory(entry){
+  const h = document.getElementById('history');
+  const p = document.createElement('div');
+  p.className = 'hist-item';
+  const time = new Date().toLocaleString('en-US');
+  p.innerHTML = `<div style="color:#555;font-size:.85rem;margin-bottom:6px">${time}</div><div>${entry}</div>`;
+  h.prepend(p);
+}
+/* --- Inputs dynamic handling --- */
+const inputsArea = document.getElementById('inputs');
+const convSelect = document.getElementById('conversionType');
+function onTypeChange(){
+  const type = convSelect.value;
+  inputsArea.innerHTML = '';
+  // default single numeric input:
+  if(type === '') {
+    inputsArea.innerHTML = `<input type="number" id="valueIn" placeholder="Enter value" />`;
+    return;
+  }
+
+  if(type === 'dateDiff'){
+    inputsArea.innerHTML = `<div style="display:flex;gap:8px;flex-wrap:wrap">
+      <div style="flex:1;min-width:140px"><label>First date</label><input type="date" id="date1" /></div>
+      <div style="flex:1;min-width:140px"><label>Second date</label><input type="date" id="date2" /></div>
+    </div>`;
+    return;
+  }
+
+  if(type === 'ymdToDays'){
+    inputsArea.innerHTML = `<div style="display:flex;gap:8px;flex-wrap:wrap">
+      <input type="number" id="years" placeholder="Years" />
+      <input type="number" id="months" placeholder="Months" />
+      <input type="number" id="days" placeholder="Days" />
+    </div>`;
+    return;
+  }
+
+  if(type === 'daysToYMD'){
+    inputsArea.innerHTML = `<input type="number" id="daysOnly" placeholder="Enter days" />`;
+    return;
+  }
+
+  // default numeric single input
+  inputsArea.innerHTML = `<input type="number" id="valueIn" placeholder="Enter value" />`;
+}
+
+/* --- Conversion logic --- */
+function doConvert(){
+  const type = convSelect.value;
+  let out = '';
+  if(!type){ showNotifier('Please select a conversion type'); return; }
+
+  // Numeric-based conversions:
+  const v = parseFloat(document.getElementById('valueIn') ? document.getElementById('valueIn').value : NaN);
+
+  switch(type){
+    /* LENGTH */
+    case 'meterToFeet': out = round(v*3.28084,4) + ' ft'; break;
+    case 'feetToMeter': out = round(v/3.28084,4) + ' m'; break;
+    case 'kmToMile': out = round(v*0.621371,4) + ' mi'; break;
+    case 'mileToKm': out = round(v/0.621371,4) + ' km'; break;
+    case 'cmToInch': out = round(v*0.393701,4) + ' in'; break;
+    case 'inchToCm': out = round(v/0.393701,4) + ' cm'; break;
+    case 'mmToInch': out = round(v*0.0393701,4) + ' in'; break;
+    case 'inchToMm': out = round(v/0.0393701,4) + ' mm'; break;
+    case 'yardToMeter': out = round(v*0.9144,4) + ' m'; break;
+    case 'meterToYard': out = round(v/0.9144,4) + ' yd'; break;
+
+    /* WEIGHT */
+    case 'kgToPound': out = round(v*2.20462,4) + ' lb'; break;
+    case 'poundToKg': out = round(v/2.20462,4) + ' kg'; break;
+    case 'gramToOunce': out = round(v*0.035274,4) + ' oz'; break;
+    case 'ounceToGram': out = round(v/0.035274,4) + ' g'; break;
+    case 'tonToKg': out = round(v*1000,4) + ' kg'; break;
+    case 'kgToTon': out = round(v/1000,4) + ' t'; break;
+    case 'seerToKg': out = round(v*0.9331,4) + ' kg'; break;
+    case 'kgToSeer': out = round(v/0.9331,4) + ' seer'; break;
+
+    /* AREA */
+    case 'marlaToSqft': out = round(v*272.25,4) + ' sq ft'; break;
+    case 'sqftToMarla': out = round(v/272.25,4) + ' marla'; break;
+    case 'kanalToAcre': out = round(v*0.125,4) + ' acre'; break;
+    case 'acreToKanal': out = round(v/0.125,4) + ' kanal'; break;
+    case 'sqmToSqft': out = round(v*10.7639,4) + ' sq ft'; break;
+    case 'sqftToSqm': out = round(v/10.7639,4) + ' m²'; break;
+    case 'hectareToAcre': out = round(v*2.47105,4) + ' acre'; break;
+    case 'acreToHectare': out = round(v/2.47105,4) + ' ha'; break;
+
+    /* VOLUME */
+    case 'literToGallon': out = round(v*0.264172,4) + ' gal (US)'; break;
+    case 'gallonToLiter': out = round(v/0.264172,4) + ' L'; break;
+    case 'mlToCup': out = round(v*0.00422675,4) + ' cup (US)'; break;
+    case 'cupToMl': out = round(v/0.00422675,4) + ' mL'; break;
+    case 'cubicToLiter': out = round(v*1000,4) + ' L'; break;
+    case 'literToCubic': out = round(v/1000,4) + ' m³'; break;
+
+    /* SPEED */
+    case 'kmhToMph': out = round(v*0.621371,4) + ' mph'; break;
+    case 'mphToKmh': out = round(v/0.621371,4) + ' km/h'; break;
+    case 'msToKmh': out = round(v*3.6,4) + ' km/h'; break;
+    case 'kmhToMs': out = round(v/3.6,4) + ' m/s'; break;
+
+    /* TIME simple */
+    case 'hourToMinute': out = round(v*60,4) + ' minutes'; break;
+    case 'minuteToSecond': out = round(v*60,4) + ' seconds'; break;
+    case 'dayToHour': out = round(v*24,4) + ' hours'; break;
+    case 'hourToDay': out = round(v/24,4) + ' days'; break;
+
+    /* TEMPERATURE */
+    case 'cToF': out = round((v*9/5)+32,4) + ' °F'; break;
+    case 'fToC': out = round((v-32)*5/9,4) + ' °C'; break;
+    case 'cToK': out = round(v+273.15,4) + ' K'; break;
+    case 'kToC': out = round(v-273.15,4) + ' °C'; break;
+
+    /* DATA */
+    case 'bytesToKb': out = round(v/1024,4) + ' KB'; break;
+    case 'kbToMb': out = round(v/1024,4) + ' MB'; break;
+    case 'mbToGb': out = round(v/1024,4) + ' GB'; break;
+
+    /* DAYS / YMD converters */
+    case 'daysToYMD': {
+      const days = parseInt(document.getElementById('daysOnly') ? document.getElementById('daysOnly').value : NaN);
+      if(isNaN(days)){ showNotifier('Please enter valid days'); return; }
+      const years = Math.floor(days / 365);
+      const months = Math.floor((days % 365) / 30);
+      const d = (days % 365) % 30;
+      out = `${years} years, ${months} months, ${d} days`;
+    } break;
+
+    case 'ymdToDays': {
+      const y = parseInt(document.getElementById('years')?.value || 0);
+      const m = parseInt(document.getElementById('months')?.value || 0);
+      const d = parseInt(document.getElementById('days')?.value || 0);
+      if(isNaN(y)||isNaN(m)||isNaN(d)){ showNotifier('Please enter valid years/months/days'); return; }
+      const total = (y*365) + (m*30) + d;
+      out = total + ' days (approx)';
+    } break;
+
+    /* DATE DIFF between two dates (accurate with month/day adjustments) */
+    case 'dateDiff': {
+      const d1s = document.getElementById('date1')?.value;
+      const d2s = document.getElementById('date2')?.value;
+      if(!d1s || !d2s){ showNotifier('Please select both dates'); return; }
+      let d1 = new Date(d1s);
+      let d2 = new Date(d2s);
+      if(isNaN(d1) || isNaN(d2)){ showNotifier('Please select valid dates'); return; }
+      if(d1 > d2){ const t = d1; d1 = d2; d2 = t; }
+      let years = d2.getFullYear() - d1.getFullYear();
+      let months = d2.getMonth() - d1.getMonth();
+      let days = d2.getDate() - d1.getDate();
+      if(days < 0){
+        months -= 1;
+        const prevMonthLastDay = new Date(d2.getFullYear(), d2.getMonth(), 0).getDate();
+        days += prevMonthLastDay;
+      }
+      if(months < 0){
+        years -= 1;
+        months += 12;
+      }
+      out = `${years} years, ${months} months, ${days} days`;
+    } break;
+
+    default:
+      showNotifier('This conversion is not available yet');
+      return;
+  } // switch
+
+  // show result
+  document.getElementById('resultText').textContent = out;
+  document.getElementById('resultBox').style.display = 'block';
+  showNotifier(out);
+  addHistory(out);
+}
+
+/* --- helpers --- */
+function clearInputs(){
+  document.getElementById('valueIn') && (document.getElementById('valueIn').value = '');
+  document.getElementById('date1') && (document.getElementById('date1').value = '');
+  document.getElementById('date2') && (document.getElementById('date2').value = '');
+  document.getElementById('daysOnly') && (document.getElementById('daysOnly').value = '');
+  document.getElementById('years') && (document.getElementById('years').value = '');
+  document.getElementById('months') && (document.getElementById('months').value = '');
+  document.getElementById('days') && (document.getElementById('days').value = '');
+  document.getElementById('resultBox').style.display = 'none';
+  showNotifier('Inputs cleared');
+}
+function showNotifier(msg){ // override to use top rainbow bar
+  const n = document.getElementById('notifier');
+  n.textContent = '📢 ' + msg;
+  n.style.top = '0';
+  setTimeout(()=> n.style.top = '-72px',3800);
+}
+function openCalculator(){ // if you have index.html calculator file in same folder
+  try{ window.location.href = 'index.html'; } catch(e){ showNotifier('Cannot open calculator'); }
+}
+function copyResult(){ const txt = document.getElementById('resultText').textContent || ''; if(!txt){ showNotifier('No result available'); return;} navigator.clipboard?.writeText(txt).then(()=> showNotifier('Result copied'), ()=> showNotifier('Copy failed')); }
+
+/* history clear */
+function clearHistory(){ document.getElementById('history').innerHTML=''; showNotifier('All history cleared'); }
+
+/* initial */
+onTypeChange(); // setup default input
+</script>
+</body>
+</html>
